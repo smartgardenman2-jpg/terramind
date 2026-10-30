@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Terramind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0D1F17;
+  --surface:   #132419;
+  --surface2:  #1A2F20;
+  --border:    rgba(255,255,255,0.08);
+  --green:     #4CAF80;
+  --green-dim: rgba(76,175,128,0.12);
+  --blue:      #5BA8D4;
+  --blue-dim:  rgba(91,168,212,0.12);
+  --amber:     #E8A838;
+  --amber-dim: rgba(232,168,56,0.12);
+  --red:       #E05C5C;
+  --red-dim:   rgba(224,92,92,0.12);
+  --text:      #E8F2EC;
+  --text-2:    #8AADA0;
+  --text-3:    #4A6A5C;
+  --mono:      'Space Mono', monospace;
+  --sans:      'DM Sans', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:       #F2F7F4;
+    --surface:  #FFFFFF;
+    --surface2: #EBF3EE;
+    --border:   rgba(0,0,0,0.08);
+    --text:     #0D1F17;
+    --text-2:   #4A6A5C;
+    --text-3:   #8AADA0;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+}
+button { font-family: var(--sans); cursor: pointer; }
+
+/* ── HEADER ── */
+header {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 20;
+}
+.hd-left { display: flex; align-items: center; gap: 10px; }
+.hd-icon {
+  width: 32px; height: 32px;
+  background: var(--green-dim);
+  border: 1px solid rgba(76,175,128,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+header h1 { font-size: .95rem; font-weight: 600; }
+header p  { font-size: .72rem; color: var(--text-2); margin-top: 1px; }
+.pill {
+  display: flex; align-items: center; gap: 8px;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 2px rgba(224,92,92,.2);
+  transition: background .4s, box-shadow .4s;
+  flex-shrink: 0;
+}
+.dot.live { background: var(--green); box-shadow: 0 0 0 3px rgba(76,175,128,.2); }
+#clock {
+  font-family: var(--mono);
+  font-size: .82rem;
+  color: var(--text-2);
+  letter-spacing: .04em;
+}
+
+/* ── LAYOUT ── */
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── PUMP BAR ── */
+#pump-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .4s, background .4s;
+}
+/* subtle left accent line */
+#pump-bar::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--text-3);
+  transition: background .4s;
+}
+#pump-bar.on {
+  border-color: rgba(91,168,212,.35);
+  background: linear-gradient(100deg, rgba(91,168,212,.07) 0%, var(--surface) 60%);
+}
+#pump-bar.on::before { background: var(--blue); }
+
+.pump-left { display: flex; align-items: center; gap: 16px; }
+
+/* Icon with ring */
+.pump-ripple {
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+.pump-ripple::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-3);
+  opacity: .35;
+  transition: border-color .3s, opacity .3s;
+}
+#pump-bar.on .pump-ripple::after {
+  border-color: var(--blue);
+  opacity: 1;
+  animation: ripple-ring 1.8s ease-in-out infinite;
+}
+@keyframes ripple-ring {
+  0%   { transform: scale(.85); opacity: .8; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+/* Status dot next to label */
+.pump-status-row { display: flex; align-items: center; gap: 7px; }
+.pump-status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-3);
+  flex-shrink: 0;
+  transition: background .4s, box-shadow .4s;
+}
+#pump-bar.on .pump-status-dot {
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgba(91,168,212,.2);
+}
+.pump-txt h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+.pump-txt p  { font-size: .75rem; color: var(--text-2); margin-top: 3px; }
+#pump-cd     { font-size: .75rem; color: var(--blue); margin-top: 4px; font-weight: 500; min-height: 1em; font-family: var(--mono); }
+
+.pump-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Toggle */
+.mode-wrap { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: var(--text-2); }
+.toggle { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.tslider {
+  position: absolute; inset: 0;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 13px;
+  cursor: pointer; transition: background .2s, border-color .2s;
+}
+.tslider::after {
+  content: '';
+  position: absolute;
+  left: 4px; top: 4px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--text-3);
+  transition: transform .2s, background .2s;
+}
+.toggle input:checked + .tslider { background: rgba(76,175,128,.2); border-color: var(--green); }
+.toggle input:checked + .tslider::after { transform: translateX(22px); background: var(--green); }
+
+/* Buttons */
+.btn {
+  padding: 8px 18px;
+  font-size: .8rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text);
+  transition: border-color .15s, background .15s;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--text-2); }
+.btn.accent {
+  background: var(--green);
+  border-color: var(--green);
+  color: #0D1F17;
+  font-weight: 600;
+}
+.btn.accent:hover { background: #3d9e6a; border-color: #3d9e6a; }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── SENSOR GRID ── */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) { .sensor-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 400px) { .sensor-grid { grid-template-columns: 1fr 1fr; } }
+
+.sc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+/* accent strip */
+.sc::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.sc.c-green::after { background: var(--green); }
+.sc.c-blue::after  { background: var(--blue);  }
+.sc.c-amber::after { background: var(--amber); }
+.sc.c-red::after   { background: var(--red);   }
+
+.sc-name { font-size: .7rem; color: var(--text-2); font-weight: 500; margin-bottom: 10px; }
+.sc-val {
+  font-family: var(--mono);
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.03em;
+}
+.sc-unit { font-size: .85rem; font-weight: 400; color: var(--text-2); margin-left: 1px; }
+.sc-badge {
+  display: inline-block;
+  font-size: .65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  margin-top: 8px;
+}
+.b-ok   { background: var(--green-dim); color: var(--green); }
+.b-warn { background: var(--amber-dim); color: var(--amber); }
+.b-bad  { background: var(--red-dim);   color: var(--red);   }
+
+/* Mini bar */
+.sc-bar {
+  height: 3px;
+  background: var(--border);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.sc-bar-fill { height: 100%; transition: width .7s ease; }
+
+/* pH strip */
+.ph-strip {
+  height: 4px;
+  margin-top: 10px;
+  background: linear-gradient(90deg,
+    #e53935 0%, #e67c13 14%, #fdd835 28%,
+    #66bb6a 42%, #42a5f5 57%, #5c6bc0 71%, #8e24aa 100%);
+  position: relative;
+}
+.ph-pin {
+  position: absolute; top: -3px;
+  width: 3px; height: 10px;
+  background: var(--text);
+  transform: translateX(-50%);
+  transition: left .7s ease;
+}
+
+/* ── CHART ── */
+.chart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-head h3 { font-size: .8rem; font-weight: 600; color: var(--text-2); }
+.chart-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.ctab {
+  font-size: .72rem;
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-2);
+  transition: color .15s, border-color .15s, background .15s;
+}
+.ctab:hover { color: var(--text); border-color: var(--text-2); }
+.ctab.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+canvas { width: 100% !important; height: 200px !important; display: block; touch-action: none; }
+
+/* ── LOG ── */
+.log-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+.log-wrap h3 { font-size: .8rem; font-weight: 600; color: var(--text-2); margin-bottom: 10px; }
+#log-ul {
+  list-style: none;
+  max-height: 190px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+#log-ul li {
+  display: flex; gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .73rem;
+}
+#log-ul li:last-child { border: none; }
+.lt { font-family: var(--mono); font-size: .67rem; color: var(--text-3); flex-shrink: 0; width: 92px; display: flex; flex-direction: column; line-height: 1.35; }
+.lt b { font-weight: 600; color: var(--text-2); }
+.lt small { font-size: .6rem; }
+.lm { color: var(--text-2); }
+.lm.pump { color: var(--blue); }
+.lm.ok   { color: var(--green); }
+.lm.warn { color: var(--amber); }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  font-size: .7rem;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* ── MOTION: WATER FLOW (pump bar) ── */
+.water-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .5s;
+}
+#pump-bar.on .water-canvas { opacity: 1; }
+
+/* ── MOTION: SENSOR CANVAS ── */
+.sc-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.sc-particles canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  /* Header */
+  header { padding: 12px 16px; }
+  header h1 { font-size: .88rem; }
+  header p  { display: none; }
+  #clock { font-size: .75rem; }
+
+  /* Main padding */
+  main { padding: 12px; gap: 10px; }
+
+  /* Pump bar: stack vertically on small screens */
+  #pump-bar { flex-direction: column; align-items: flex-start; gap: 14px; padding: 16px; }
+  .pump-right { width: 100%; justify-content: space-between; }
+  .pump-ripple { width: 40px; height: 40px; font-size: 20px; }
+  .pump-txt h2 { font-size: .95rem; }
+
+  /* Sensor values smaller on 2-col grid */
+  .sc-val { font-size: 1.5rem; }
+  .sc { padding: 12px 12px 12px 14px; }
+  .sc-name { font-size: .65rem; }
+
+  /* Chart tabs wrap + smaller text */
+  .chart-tabs { gap: 3px; flex-wrap: wrap; }
+  .ctab { font-size: .68rem; padding: 4px 9px; }
+  canvas { height: 150px !important; }
+  .chart-wrap { padding: 14px 12px; }
+  .chart-head { gap: 6px; }
+  .chart-head h3 { font-size: .75rem; }
+
+  /* Log */
+  .log-wrap { padding: 14px 12px; }
+  #log-ul { max-height: 150px; }
+
+  /* Footer */
+  footer { padding: 10px 16px; font-size: .65rem; }
+
+  /* Buttons full-width pill */
+  .btn { padding: 9px 14px; font-size: .78rem; }
+}
+
+@media (max-width: 380px) {
+  .sc-val { font-size: 1.3rem; }
+  .sc-badge { font-size: .6rem; padding: 1px 5px; }
+  .pump-txt h2 { font-size: .88rem; }
+  #pump-bar { padding: 14px 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-left">
+    <div class="hd-icon">🌱</div>
+    <div>
+      <h1>Terramind</h1>
+      <p>ESP32 · DHT22 · pH DMS · Blynk</p>
+    </div>
+  </div>
+  <div class="pill">
+    <div class="dot" id="dot"></div>
+    <span id="clock">--:--:--</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- PUMP -->
+  <div id="pump-bar">
+    <canvas class="water-canvas" id="water-canvas"></canvas>
+    <div class="pump-left">
+      <div class="pump-ripple">💧</div>
+      <div class="pump-txt">
+        <div class="pump-status-row">
+          <div class="pump-status-dot"></div>
+          <h2 id="pump-lbl">Pompa mati</h2>
+        </div>
+        <p id="pump-sub">Sistem standby</p>
+        <div id="pump-cd"></div>
+      </div>
+    </div>
+    <div class="pump-right">
+      <label class="mode-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="auto-chk" checked onchange="setMode(this.checked)">
+          <span class="tslider"></span>
+        </label>
+        <span>Otomatis</span>
+      </label>
+      <button class="btn accent" id="man-btn" onclick="manualPump()">Siram 3 detik</button>
+    </div>
+  </div>
+
+  <!-- SENSORS -->
+  <div class="sensor-grid">
+    <!-- Suhu -->
+    <div class="sc c-red" id="sc-temp">
+      <div class="sc-particles" id="par-temp"></div>
+      <div class="sc-name">Suhu udara</div>
+      <div class="sc-val" id="v-temp">—<span class="sc-unit">°C</span></div>
+      <span class="sc-badge b-ok" id="b-temp">—</span>
+      <div class="sc-bar"><div class="sc-bar-fill" id="bar-temp" style="background:var(--red);width:0%"></div></div>
+    </div>
+    <!-- Kelembapan udara -->
+    <div class="sc c-blue">
+      <div class="sc-particles" id="par-hum"></div>
+      <div class="sc-name">Kelembapan udara</div>
+      <div class="sc-val" id="v-hum">—<span class="sc-unit">%</span></div>
+      <span class="sc-badge b-ok" id="b-hum">—</span>
+      <div class="sc-bar"><div class="sc-bar-fill" id="bar-hum" style="background:var(--blue);width:0%"></div></div>
+    </div>
+    <!-- Kelembapan tanah -->
+    <div class="sc c-amber">
+      <div class="sc-particles" id="par-moist"></div>
+      <div class="sc-name">Kelembapan tanah</div>
+      <div class="sc-val" id="v-moist">—<span class="sc-unit">%</span></div>
+      <span class="sc-badge b-ok" id="b-moist">—</span>
+      <div class="sc-bar"><div class="sc-bar-fill" id="bar-moist" style="background:var(--amber);width:0%"></div></div>
+    </div>
+    <!-- pH -->
+    <div class="sc c-green">
+      <div class="sc-particles" id="par-ph"></div>
+      <div class="sc-name">pH tanah</div>
+      <div class="sc-val" id="v-ph">—</div>
+      <span class="sc-badge b-ok" id="b-ph">—</span>
+      <div class="ph-strip"><div class="ph-pin" id="ph-pin" style="left:50%"></div></div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="chart-wrap">
+    <div class="chart-head">
+      <h3>Riwayat 30 pembacaan terakhir</h3>
+      <div class="chart-tabs">
+        <button class="ctab active" onclick="switchChart(this,'moist')">Tanah</button>
+        <button class="ctab" onclick="switchChart(this,'temp')">Suhu</button>
+        <button class="ctab" onclick="switchChart(this,'hum')">Udara</button>
+        <button class="ctab" onclick="switchChart(this,'ph')">pH</button>
+      </div>
+    </div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <!-- LOG -->
+  <!-- Aksi data -->
+  <div id="db-panel" style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;">
+    <button class="btn" onclick="exportExcel()" id="export-btn" title="Download semua data ke Excel">⬇ Export Excel</button>
+    <button class="btn" onclick="confirmClearDB()" style="color:var(--red);border-color:var(--red);opacity:.7;" title="Hapus semua data dari database">🗑 Hapus Data</button>
+  </div>
+
+  <div class="log-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h3 style="margin-bottom:0">Log aktivitas</h3>
+    </div>
+    <ul id="log-ul">
+      <li><span class="lt"><b>--:--:--</b><small>-- --- ----</small></span><span class="lm">Sistem dimuat, menunggu data…</span></li>
+    </ul>
+  </div>
+
+</main>
+
+<footer id="footer-status">Terramind · Menghubungkan…</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── KONFIGURASI BLYNK ──────────────────────────
+// ⚠️  PERINGATAN KEAMANAN: Token ini terlihat oleh siapa pun yang melihat
+//     source code halaman ini. Siapapun yang memiliki token dapat mengontrol
+//     pompa Anda. Ganti token (regenerate di Blynk Console) sebelum
+//     mempublikasikan halaman ini secara online.
+//     Kosongkan (null) untuk mode demo tanpa koneksi Blynk.
+const BLYNK_TOKEN = '68W3z4FudOJR3QY83c6LllxTJ62_RX1K'; // ← ganti token!
+
+// Virtual Pin mapping (sesuai kode ESP32)
+const VPIN = {
+  temp:  'v0',  // Suhu
+  hum:   'v1',  // Kelembapan udara
+  moist: 'v2',  // Kelembapan tanah
+  ph:    'v3',  // pH
+  pump:  'v4',  // Status pompa
+};
+
+// Blynk HTTP API base URL
+const BLYNK_BASE = 'https://blynk.cloud/external/api';
+
+// Interval fetch — ESP32 hanya kirim ke Blynk tiap 180 detik,
+// polling lebih cepat hanya memboroskan request tanpa data baru.
+// 60 detik = 1 req/menit = 1.440 req/hari (aman untuk akun free)
+const POLL = 60000;
+
+// ── DATABASE (Netlify Blobs via Function) ───────
+// /api/data sudah tersedia otomatis di deployment Netlify
+// Jika lokal (file://) gunakan null untuk disable DB
+const DB_URL = window.location.protocol === 'file:'
+  ? null
+  : '/api/data';
+let dbEnabled = !!DB_URL;
+let lastSavedId = 0; // id record terakhir yang disimpan, cegah duplikat
+
+// ── DATA ───────────────────────────────────────
+const H = { moist:[], temp:[], hum:[], ph:[], lbl:[], ts:[] };
+const MAX = 30;  // buffer chart (hanya untuk grafik real-time)
+let demo_i = 0, pumpOn = false, autoOn = true, cdTimer = null;
+let wasOnline = null;
+
+// ── FORMAT WAKTU ───────────────────────────────
+const HARI  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const pad2  = n => String(n).padStart(2, '0');
+function tp(ms) {               // pecah timestamp jadi bagian-bagian
+  const d = new Date(ms);
+  return { hari: HARI[d.getDay()], tgl: d.getDate(), bln: BULAN[d.getMonth()],
+           thn: d.getFullYear(), jam: d.getHours(), mnt: d.getMinutes(), dtk: d.getSeconds() };
+}
+function fullStr(ms) {          // "Jumat, 30 Oktober 2026 11:45:12"
+  const x = tp(ms);
+  return `${x.hari}, ${x.tgl} ${x.bln} ${x.thn} ${pad2(x.jam)}:${pad2(x.mnt)}:${pad2(x.dtk)}`;
+}
+
+// ── PUMP LOG ───────────────────────────────────
+const pumpLog = [];
+
+function demoTick() {
+  const i = demo_i++;
+  return {
+    t: +(26 + Math.sin(i*.18)*5   + (Math.random()-.5)*.8).toFixed(1),
+    h: +(63 + Math.cos(i*.13)*14  + (Math.random()-.5)*1.5).toFixed(1),
+    m: +(42 + Math.sin(i*.09)*26  + (Math.random()-.5)*2).toFixed(1),
+    p: +(6.3+ Math.sin(i*.06)*.55 + (Math.random()-.5)*.12).toFixed(2),
+    pump: pumpOn, auto: autoOn
+  };
+}
+
+// ── CHART ──────────────────────────────────────
+const COLOR = { moist:'#E8A838', temp:'#E05C5C', hum:'#5BA8D4', ph:'#4CAF80' };
+const RANGE = { moist:[0,100], temp:[15,45], hum:[0,100], ph:[0,14] };
+let activeKey = 'moist';
+
+// Custom crosshair + touch tooltip plugin
+const crosshairPlugin = {
+  id: 'crosshair',
+  afterDraw(chart) {
+    if (chart._hoverX == null) return;
+    const { ctx, chartArea: { top, bottom } } = chart;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(chart._hoverX, top);
+    ctx.lineTo(chart._hoverX, bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+
+const canvas = document.getElementById('chart');
+const chartInst = new Chart(canvas, {
+  type: 'line',
+  plugins: [crosshairPlugin],
+  data: {
+    labels: [],
+    datasets: [{
+      data: [], tension: .38,
+      borderColor: COLOR.moist,
+      backgroundColor: 'rgba(232,168,56,0.06)',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: COLOR.moist,
+      pointHoverBorderColor: '#0D1F17',
+      pointHoverBorderWidth: 2,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    animation: { duration: 300 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        backgroundColor: '#1A2F20',
+        borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        titleColor: '#8AADA0',
+        bodyColor: '#E8F2EC',
+        titleFont: { family: "'Space Mono'", size: 10 },
+        bodyFont:  { family: "'Space Mono'", size: 13, weight: 'bold' },
+        padding: 10,
+        displayColors: false,
+        caretSize: 5,
+        callbacks: {
+          title: items => items[0]?.label ?? '',
+          label: item => {
+            const units = { moist:'%', temp:'°C', hum:'%', ph:'' };
+            return item.formattedValue + (units[activeKey] || '');
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: '#4A6A5C', font: { size: 9, family: "'Space Mono'" }, maxTicksLimit: 7 }
+      },
+      y: {
+        min: RANGE[activeKey][0], max: RANGE[activeKey][1],
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: '#4A6A5C', font: { size: 9 }, maxTicksLimit: 5 }
+      }
+    },
+    onHover(_, __, chart) {
+      // store X for crosshair
+    }
+  }
+});
+
+// Track hover X for crosshair
+canvas.addEventListener('mousemove', e => {
+  const pts = chartInst.getElementsAtEventForMode(e, 'index', { intersect: false }, true);
+  if (pts.length) {
+    chartInst._hoverX = chartInst.getDatasetMeta(0).data[pts[0].index]?.x;
+  } else {
+    chartInst._hoverX = null;
+  }
+  chartInst.draw();
+});
+canvas.addEventListener('mouseleave', () => { chartInst._hoverX = null; chartInst.draw(); });
+
+// Touch support
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect  = canvas.getBoundingClientRect();
+  const fakeEvt = { clientX: touch.clientX, clientY: touch.clientY, target: canvas };
+  const pts = chartInst.getElementsAtEventForMode(fakeEvt, 'index', { intersect: false }, true);
+  if (pts.length) {
+    chartInst._hoverX = chartInst.getDatasetMeta(0).data[pts[0].index]?.x;
+    chartInst.tooltip.setActiveElements(pts.map(p => ({ datasetIndex: 0, index: p.index })),
+      { x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+  }
+  chartInst.draw();
+}, { passive: false });
+canvas.addEventListener('touchend', () => {
+  setTimeout(() => { chartInst._hoverX = null; chartInst.tooltip.setActiveElements([], {}); chartInst.draw(); }, 1800);
+});
+
+function switchChart(btn, key) {
+  document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeKey = key;
+  const c = COLOR[key];
+  chartInst.data.datasets[0].borderColor = c;
+  chartInst.data.datasets[0].backgroundColor = c + '10';
+  chartInst.data.datasets[0].pointHoverBackgroundColor = c;
+  chartInst.options.scales.y.min = RANGE[key][0];
+  chartInst.options.scales.y.max = RANGE[key][1];
+  chartInst.data.labels = [...H.lbl];
+  chartInst.data.datasets[0].data = [...H[key]];
+  chartInst.update();
+}
+
+function pushChart() {
+  chartInst.data.labels = [...H.lbl];
+  chartInst.data.datasets[0].data = [...H[activeKey]];
+  chartInst.update('none');
+}
+
+// ── UPDATE UI ──────────────────────────────────
+function ui(d) {
+  const ts = new Date().toLocaleTimeString('id-ID');
+  document.getElementById('dot').classList.add('live');
+
+  // Temp
+  setCard('temp', d.t, `${d.t}<span class="sc-unit">°C</span>`,
+    ((d.t-15)/30*100),
+    d.t > 35 ? ['Sangat panas','bad'] : d.t > 30 ? ['Hangat','warn'] : d.t < 18 ? ['Dingin','warn'] : ['Normal','ok']);
+
+  // Humidity
+  setCard('hum', d.h, `${d.h}<span class="sc-unit">%</span>`,
+    d.h,
+    d.h < 40 ? ['Rendah','bad'] : d.h > 80 ? ['Tinggi','warn'] : ['Normal','ok']);
+
+  // Moisture
+  setCard('moist', d.m, `${d.m}<span class="sc-unit">%</span>`,
+    d.m,
+    d.m < 30 ? ['Kering','bad'] : d.m < 50 ? ['Agak kering','warn'] : d.m > 70 ? ['Basah','ok'] : ['Ideal','ok']);
+
+  // pH
+  document.getElementById('v-ph').textContent = (+d.p).toFixed(2);
+  document.getElementById('ph-pin').style.left = (d.p / 14 * 100) + '%';
+  const [ptx, pcl] = d.p < 5.5 ? ['Asam','bad'] : d.p > 7 ? ['Basa','warn'] : ['Ideal','ok'];
+  setBadge('ph', ptx, pcl);
+
+  // Pump
+  if (d.pump !== undefined && d.pump !== pumpOn) syncPump(d.pump);
+  if (d.auto  !== undefined) {
+    autoOn = d.auto;
+    document.getElementById('auto-chk').checked = autoOn;
+  }
+
+  // History
+  H.ts.push(Date.now()); H.lbl.push(ts); H.moist.push(+d.m); H.temp.push(+d.t); H.hum.push(+d.h); H.ph.push(+d.p);
+  Object.values(H).forEach(a => { if (a.length > MAX) a.shift(); });
+  pushChart();
+
+  addLog(ts, `T:${d.t}°C  H:${d.h}%  Tanah:${d.m}%  pH:${(+d.p).toFixed(2)}`, 'lm');
+
+  // ── Simpan ke database Netlify Blobs ──────────
+  // Cegah duplikat: hanya simpan jika data berubah dari sebelumnya
+  const nowId = Date.now();
+  if (wasOnline === true && nowId - lastSavedId >= 55000) {
+    lastSavedId = nowId;
+    dbSave({ t: d.t, h: d.h, m: d.m, p: d.p, pump: d.pump ? 1 : 0, auto: d.auto ? 1 : 0 });
+  }
+}
+
+function setCard(key, rawVal, html, pct, [txt, cl]) {
+  document.getElementById('v-'+key).innerHTML = html;
+  const bar = document.getElementById('bar-'+key);
+  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  setBadge(key, txt, cl);
+}
+function setBadge(key, txt, cl) {
+  const el = document.getElementById('b-'+key);
+  el.textContent = txt;
+  el.className   = 'sc-badge b-' + cl;
+}
+
+// ── PUMP ───────────────────────────────────────
+function syncPump(on) {
+  // Rekam ke pump log setiap kali status berubah
+  if (on !== pumpOn) {
+    const ev = { ts: Date.now(), event: on ? 'POMPA ON' : 'POMPA OFF', mode: autoOn ? 'Otomatis' : 'Manual' };
+    pumpLog.push(ev);
+    addLog(null, `${on ? 'Pompa ON' : 'Pompa OFF'} · ${ev.mode}`, 'lm pump',
+           { kind: 'pump', ts: ev.ts, event: ev.event, mode: ev.mode });
+  }
+  pumpOn = on;
+  const bar = document.getElementById('pump-bar');
+  bar.classList.toggle('on', on);
+  document.getElementById('pump-lbl').textContent = on ? 'Pompa aktif' : 'Pompa mati';
+  document.getElementById('pump-sub').textContent = on
+    ? 'Sedang menyiram tanaman…'
+    : (autoOn ? 'Mode otomatis — siap' : 'Mode manual — standby');
+  if (!on) document.getElementById('pump-cd').textContent = '';
+}
+
+function manualPump() {
+  if (pumpOn) return;
+  const btn = document.getElementById('man-btn');
+  btn.disabled = true;
+  syncPump(true);
+  const ts = new Date().toLocaleTimeString('id-ID');
+  addLog(ts, 'Siram manual diaktifkan (3 detik)', 'lm pump');
+  // Kirim trigger ke Blynk V5 (pompa manual)
+  // v5=1 → ESP32 baca dan aktifkan pompa
+  // v5=0 → reset pin agar bisa dipicu lagi nanti (tunda 4 detik agar ESP32 pasti sempat baca)
+  if (BLYNK_TOKEN) fetch(`${BLYNK_BASE}/update?token=${BLYNK_TOKEN}&v5=1`).catch(()=>{});
+  setTimeout(() => {
+    if (BLYNK_TOKEN) fetch(`${BLYNK_BASE}/update?token=${BLYNK_TOKEN}&v5=0`).catch(()=>{});
+  }, 4000);
+
+  let s = 3;
+  document.getElementById('pump-cd').textContent = `Berhenti dalam ${s}s`;
+  if (cdTimer) clearInterval(cdTimer);
+  cdTimer = setInterval(() => {
+    s--;
+    if (s > 0) { document.getElementById('pump-cd').textContent = `Berhenti dalam ${s}s`; }
+    else {
+      clearInterval(cdTimer);
+      syncPump(false);
+      btn.disabled = false;
+      addLog(new Date().toLocaleTimeString('id-ID'), 'Siram manual selesai', 'lm ok');
+    }
+  }, 1000);
+}
+
+function setMode(on) {
+  autoOn = on;
+  addLog(new Date().toLocaleTimeString('id-ID'), `Mode: ${on ? 'Otomatis' : 'Manual'}`, 'lm');
+  // Kirim mode ke Blynk V6
+  if (BLYNK_TOKEN) fetch(`${BLYNK_BASE}/update?token=${BLYNK_TOKEN}&v6=${on?1:0}`).catch(()=>{});
+  if (!on && pumpOn && !cdTimer) syncPump(false);
+}
+
+// ── LOG ────────────────────────────────────────
+const LOG_URL   = DB_URL ? '/api/log' : null;   // null = mode lokal (file://) → pakai localStorage
+const LOG_SHOW  = 100;                           // jumlah baris yang tampil di layar
+const LOG_CLS   = ['lm', 'lm pump', 'lm ok', 'lm warn'];
+const LS_KEY    = 'terramind_log_v1';
+let logQueue = [], logTimer = null;
+
+// Buat baris log (teks dimasukkan lewat textContent → aman dari injeksi HTML)
+function logItemEl(e) {
+  const x  = tp(e.ts);
+  const li = document.createElement('li');
+  const lt = document.createElement('span'); lt.className = 'lt';
+  const b  = document.createElement('b');
+  b.textContent = `${pad2(x.jam)}:${pad2(x.mnt)}:${pad2(x.dtk)}`;
+  const sm = document.createElement('small');
+  sm.textContent = `${x.hari.slice(0,3)}, ${x.tgl} ${x.bln.slice(0,3)} ${x.thn}`;
+  lt.append(b, sm);
+  const m = document.createElement('span');
+  m.className = LOG_CLS.includes(e.cls) ? e.cls : 'lm';
+  m.textContent = e.msg;
+  li.append(lt, m);
+  return li;
+}
+
+// Tambah log: tampil langsung + antre untuk disimpan permanen
+function addLog(_t, msg, cls, extra) {
+  const e = Object.assign({ ts: Date.now(), msg, cls: cls || 'lm' }, extra || {});
+  const ul = document.getElementById('log-ul');
+  ul.insertBefore(logItemEl(e), ul.firstChild);
+  while (ul.children.length > LOG_SHOW) ul.removeChild(ul.lastChild);
+
+  logQueue.push(e);
+  if (logQueue.length > 200) logQueue.shift();
+  if (!logTimer) logTimer = setTimeout(flushLog, 2000);   // kirim berkelompok, hemat request
+}
+
+function localLoad() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (_) { return []; } }
+function localSave(batch) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(localLoad().concat(batch).slice(-500))); } catch (_) {}
+}
+
+async function flushLog() {
+  logTimer = null;
+  if (!logQueue.length) return;
+  const batch = logQueue.splice(0);
+  if (!LOG_URL) { localSave(batch); return; }
+  try {
+    const res  = await fetch(LOG_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: batch }) });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'gagal');
+  } catch (err) {
+    console.warn('[LOG] gagal simpan, dicoba lagi:', err.message);
+    logQueue = batch.concat(logQueue).slice(-200);
+    logTimer = setTimeout(flushLog, 15000);
+  }
+}
+
+// Muat log lama + riwayat pompa saat halaman dibuka
+async function loadLog() {
+  let entries = [], pump = [];
+  try {
+    if (LOG_URL) {
+      const [a, b] = await Promise.all([
+        fetch(`${LOG_URL}?limit=${LOG_SHOW}`).then(r => r.json()),
+        fetch(`${LOG_URL}?type=pump`).then(r => r.json()),
+      ]);
+      entries = a.entries || [];
+      pump    = b.entries || [];
+    } else {
+      const all = localLoad();
+      entries = all.slice(-LOG_SHOW);
+      pump    = all.filter(e => e.kind === 'pump');
+    }
+  } catch (_) {}
+
+  if (entries.length) {
+    const ul = document.getElementById('log-ul');
+    ul.innerHTML = '';
+    entries.slice().reverse().forEach(e => ul.appendChild(logItemEl(e)));   // terbaru di atas
+  }
+  pumpLog.length = 0;
+  pump.forEach(e => pumpLog.push({ ts: e.ts, event: e.event, mode: e.mode }));
+}
+
+// Muat riwayat sensor terakhir dari database supaya grafik tidak kosong setelah refresh
+async function loadHistory() {
+  if (!dbEnabled) return;
+  try {
+    const res  = await fetch(`${DB_URL}?limit=${MAX}`);
+    const json = await res.json();
+    if (!json.ok || !json.records.length) return;
+    json.records.forEach(r => {
+      H.ts.push(r.id);
+      H.lbl.push(new Date(r.id).toLocaleTimeString('id-ID'));
+      H.moist.push(+r.m); H.temp.push(+r.t); H.hum.push(+r.h); H.ph.push(+r.p);
+    });
+    lastSavedId = json.records[json.records.length - 1].id;   // cegah simpan dobel tepat setelah refresh
+    pushChart();
+  } catch (_) {}
+}
+
+// ── FETCH BLYNK ────────────────────────────────
+// Blynk HTTP API: GET /external/api/get?token=xxx&v0&v1&v2&v3&v4
+// Mengembalikan: { "v0": ["26.5"], "v1": ["63"], ... }
+async function tick() {
+  const dot    = document.getElementById('dot');
+  const footer = document.getElementById('footer-status');
+  const now    = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  // ── Bug 1 fix: tanpa token → mode demo, bukan "offline" ──
+  if (!BLYNK_TOKEN) {
+    dot.classList.remove('live');
+    footer.textContent = 'Terramind · Mode demo — isi token untuk data nyata';
+    ui(demoTick());
+    return;
+  }
+
+  try {
+    // Fetch data sensor + timestamp terakhir update PARALEL
+    // /isOnline tidak ada di Blynk IoT (blynk.cloud) → pakai /get biasa
+    // Deteksi offline dari timestamp: jika data terakhir > 10 menit → offline
+    const pins = Object.values(VPIN).join('&');
+    const [rData, rStamp] = await Promise.all([
+      fetch(`${BLYNK_BASE}/get?token=${BLYNK_TOKEN}&${pins}`),
+      fetch(`${BLYNK_BASE}/get?token=${BLYNK_TOKEN}&${VPIN.temp}`).catch(() => null),
+    ]);
+
+    // Token salah atau device tidak terdaftar di Blynk
+    if (rData.status === 400) {
+      dot.classList.remove('live');
+      footer.textContent = 'Terramind · Token salah atau device tidak ditemukan';
+      if (wasOnline !== 'token-error') {
+        addLog(now, 'Token salah atau device tidak ditemukan di Blynk', 'lm warn');
+        wasOnline = 'token-error';
+      }
+      return;
+    }
+    if (!rData.ok) throw new Error('HTTP ' + rData.status);
+
+    // Parse JSON data sensor
+    const d = await rData.json().catch(() => null);
+    if (!d) throw new Error('Response bukan JSON valid');
+
+    const getVal = pin => {
+      const raw = d[pin] ?? d[pin.toUpperCase()] ?? 0;
+      return parseFloat(Array.isArray(raw) ? raw[0] : raw) || 0;
+    };
+
+    // Deteksi online: Blynk IoT tidak punya /isOnline
+    // Pakai /get dengan header — Blynk mengembalikan X-Blynk-DeviceStatus atau
+    // kita cek dari nilai data: ESP32 kirim tiap 3 menit, toleransi 10 menit
+    // Bandingkan nilai sekarang dengan nilai sebelumnya + waktu
+    const t = getVal(VPIN.temp);
+    const h = getVal(VPIN.hum);
+    const m = getVal(VPIN.moist);
+
+    // Simpan nilai terakhir dan waktu terakhir berubah
+    if (!tick._last) tick._last = { t: null, h: null, m: null, ts: 0 };
+    const prev = tick._last;
+
+    // Jika ada perubahan nilai → ESP pasti hidup dan baru kirim data
+    const dataChanged = (t !== prev.t || h !== prev.h || m !== prev.m);
+    if (dataChanged) {
+      prev.t = t; prev.h = h; prev.m = m;
+      prev.ts = Date.now();
+    }
+
+    // Online jika: data pernah berubah dalam 10 menit terakhir
+    // ATAU ini pertama kali load (prev.ts === 0) dan ada nilai valid
+    const msSinceLast = Date.now() - prev.ts;
+    const OFFLINE_THRESHOLD = 10 * 60 * 1000; // 10 menit
+    const hasValidData = (t > 0 || h > 0);
+    const isOnline = hasValidData && (prev.ts === 0 || msSinceLast < OFFLINE_THRESHOLD);
+
+    // Pertama kali load: anggap online jika ada data valid, update timestamp
+    if (prev.ts === 0 && hasValidData) { prev.ts = Date.now(); }
+
+    if (!isOnline) {
+      dot.classList.remove('live');
+      footer.textContent = `Terramind · ESP32 OFFLINE · Terakhir: ${now}`;
+
+      // ── Bug 3 fix: log "offline" hanya sekali saat transisi online→offline ──
+      if (wasOnline === true) {
+        addLog(now, 'ESP32 terputus dari Blynk', 'lm warn');
+      }
+      wasOnline = false;
+
+      // Reset tampilan kartu sensor ke "—" saat offline
+      resetCards();
+      syncPump(false);
+      return;
+    }
+
+    // ── ESP ONLINE ──
+    dot.classList.add('live');
+    footer.textContent = `Terramind · Online · Update: ${now}`;
+
+    // Log "kembali online" hanya sekali saat transisi offline→online
+    if (wasOnline === false) {
+      addLog(now, 'ESP32 kembali online', 'lm ok');
+    }
+    wasOnline = true;
+
+    ui({
+      t:    getVal(VPIN.temp),
+      h:    getVal(VPIN.hum),
+      m:    getVal(VPIN.moist),
+      p:    getVal(VPIN.ph),
+      pump: getVal(VPIN.pump) === 1,
+      auto: autoOn,
+    });
+
+  } catch(e) {
+    dot.classList.remove('live');
+    footer.textContent = `Terramind · Error: ${e.message}`;
+    console.warn('[Blynk]', e.message);
+  }
+}
+
+// Reset semua kartu sensor ke "—" saat ESP offline
+function resetCards() {
+  // Sensor dengan bar progress (temp, hum, moist)
+  [['temp','°C'],['hum','%'],['moist','%']].forEach(([k, unit]) => {
+    const valEl = document.getElementById('v-' + k);
+    if (valEl) valEl.innerHTML = `—<span class="sc-unit">${unit}</span>`;
+    const barEl = document.getElementById('bar-' + k);
+    if (barEl) barEl.style.width = '0%';
+    const badgeEl = document.getElementById('b-' + k);
+    if (badgeEl) { badgeEl.textContent = '—'; badgeEl.className = 'sc-badge b-ok'; }
+  });
+  // pH (tidak pakai bar, pakai ph-strip)
+  const phValEl = document.getElementById('v-ph');
+  if (phValEl) phValEl.textContent = '—';
+  const phPinEl = document.getElementById('ph-pin');
+  if (phPinEl) phPinEl.style.left = '50%';
+  const phBadgeEl = document.getElementById('b-ph');
+  if (phBadgeEl) { phBadgeEl.textContent = '—'; phBadgeEl.className = 'sc-badge b-ok'; }
+}
+
+// ── LIVE CLOCK ─────────────────────────────────
+function tickClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+// ══════════════════════════════════════════════
+// DATABASE — Netlify Blobs via /api/data
+// ══════════════════════════════════════════════
+
+// Simpan satu record ke database
+async function dbSave(data) {
+  if (!dbEnabled) return;
+  try {
+    const res = await fetch(DB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    if (json.ok) {
+      console.log(`[DB] Tersimpan, total: ${json.total} records`);
+    } else {
+      console.warn('[DB] Gagal simpan:', json.error);
+    }
+  } catch (e) {
+    console.warn('[DB] Error simpan:', e.message);
+    // Nonaktifkan DB sementara jika error berulang
+  }
+}
+
+// Ambil semua data dari database untuk export
+async function dbGetAll() {
+  if (!dbEnabled) return [];
+  try {
+    const res = await fetch(`${DB_URL}?limit=0`);
+    const json = await res.json();
+    if (json.ok) return json.records || [];
+    return [];
+  } catch (e) {
+    console.warn('[DB] Error ambil data:', e.message);
+    return [];
+  }
+}
+
+// Hapus semua data dari database
+async function dbClear() {
+  if (!dbEnabled) return;
+  try {
+    const res = await fetch(DB_URL, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.ok) {
+      addLog(new Date().toLocaleTimeString('id-ID'), 'Semua data database dihapus', 'lm warn');
+      console.log('[DB] Semua data dihapus');
+    }
+  } catch (e) {
+    console.warn('[DB] Error hapus:', e.message);
+  }
+}
+
+// Konfirmasi hapus database
+function confirmClearDB() {
+  if (!dbEnabled) { alert('Database tidak tersedia (mode lokal).'); return; }
+  if (confirm('⚠️ Hapus semua data database?\n\nData yang dihapus TIDAK bisa dikembalikan.\n\nLanjutkan?')) {
+    dbClear();
+  }
+}
+
+// ── EXPORT EXCEL ────────────────────────────────
+async function exportExcel() {
+  const btn = document.getElementById('export-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Mengambil data…';
+
+  try {
+    const wb = XLSX.utils.book_new();
+    const tgl = new Date().toISOString().slice(0, 10);
+
+    // ── Sheet 1: Data Sensor dari DATABASE ────────
+    // Ambil semua record dari Netlify Blobs (bukan hanya 30 terakhir di memori)
+    let allRecords = [];
+    if (dbEnabled) {
+      btn.textContent = '⏳ Loading database…';
+      allRecords = await dbGetAll();
+    }
+
+    // Fallback ke buffer memori jika DB kosong atau tidak tersedia
+    const useDB = allRecords.length > 0;
+    const sensorRows = [['Waktu', 'Suhu (°C)', 'Kelembapan Udara (%)', 'Kelembapan Tanah (%)', 'pH', 'Status Pompa', 'Mode']];
+
+    if (useDB) {
+      allRecords.forEach(r => {
+        sensorRows.push([
+          fullStr(r.id),
+          r.t  !== undefined ? r.t  : '—',
+          r.h  !== undefined ? r.h  : '—',
+          r.m  !== undefined ? r.m  : '—',
+          r.p  !== undefined ? +(+r.p).toFixed(2) : '—',
+          r.pump ? 'ON' : 'OFF',
+          r.auto ? 'Otomatis' : 'Manual',
+        ]);
+      });
+    } else {
+      // Fallback: pakai buffer H dari memori
+      for (let i = 0; i < H.lbl.length; i++) {
+        sensorRows.push([
+          fullStr(H.ts[i]),
+          H.temp[i]  !== undefined ? H.temp[i]  : '—',
+          H.hum[i]   !== undefined ? H.hum[i]   : '—',
+          H.moist[i] !== undefined ? H.moist[i] : '—',
+          H.ph[i]    !== undefined ? +(+H.ph[i]).toFixed(2) : '—',
+          '—', '—',
+        ]);
+      }
+      if (H.lbl.length === 0) {
+        sensorRows.push(['Belum ada data — tunggu polling pertama (60 detik)']);
+      }
+    }
+
+    const wsSensor = XLSX.utils.aoa_to_sheet(sensorRows);
+    wsSensor['!cols'] = [{wch:34},{wch:11},{wch:21},{wch:21},{wch:7},{wch:13},{wch:11}];
+    XLSX.utils.book_append_sheet(wb, wsSensor, 'Data Sensor');
+
+    // ── Sheet 2: Log Pompa ────────────────────────
+    const pumpRows = [['Waktu', 'Event', 'Mode']];
+    if (pumpLog.length === 0) {
+      pumpRows.push(['Belum ada aktivitas pompa tercatat', '', '']);
+    } else {
+      pumpLog.forEach(r => pumpRows.push([fullStr(r.ts), r.event, r.mode]));
+    }
+    const wsPump = XLSX.utils.aoa_to_sheet(pumpRows);
+    wsPump['!cols'] = [{ wch: 34 }, { wch: 12 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsPump, 'Log Pompa');
+
+    // ── Sheet 3: Ringkasan ─────────────────────────
+    const now = fullStr(Date.now());
+    const sourceData = useDB ? allRecords.map(r => r.t) : H.temp;
+    const srcT = useDB ? allRecords.map(r => +r.t) : H.temp.map(Number);
+    const srcH = useDB ? allRecords.map(r => +r.h) : H.hum.map(Number);
+    const srcM = useDB ? allRecords.map(r => +r.m) : H.moist.map(Number);
+    const srcP = useDB ? allRecords.map(r => +r.p) : H.ph.map(Number);
+
+    const avg  = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(2) : '—';
+    const minV = arr => arr.length ? Math.min(...arr).toFixed(2) : '—';
+    const maxV = arr => arr.length ? Math.max(...arr).toFixed(2) : '—';
+
+    const pumpOnCount = pumpLog.filter(r => r.event === 'POMPA ON').length;
+    const pumpManual  = pumpLog.filter(r => r.event === 'POMPA ON' && r.mode === 'Manual').length;
+    const pumpAuto    = pumpLog.filter(r => r.event === 'POMPA ON' && r.mode === 'Otomatis').length;
+
+    const firstTime = useDB && allRecords.length ? fullStr(allRecords[0].id) : '—';
+    const lastTime  = useDB && allRecords.length ? fullStr(allRecords[allRecords.length-1].id) : (H.ts.length ? fullStr(H.ts[H.ts.length-1]) : '—');
+
+    const summaryRows = [
+      ['RINGKASAN DATA TERRAMIND'],
+      [''],
+      ['Sumber data',          useDB ? 'Database Netlify (permanen)' : 'Buffer memori browser (sesi ini)'],
+      ['Diekspor pada',        now],
+      ['Data pertama',         firstTime],
+      ['Data terakhir',        lastTime],
+      ['Total pembacaan',      useDB ? allRecords.length : H.lbl.length],
+      [''],
+      ['── SUHU UDARA ──'],
+      ['Rata-rata (°C)', avg(srcT)],
+      ['Minimum (°C)',   minV(srcT)],
+      ['Maksimum (°C)',  maxV(srcT)],
+      [''],
+      ['── KELEMBAPAN UDARA ──'],
+      ['Rata-rata (%)',  avg(srcH)],
+      ['Minimum (%)',    minV(srcH)],
+      ['Maksimum (%)',   maxV(srcH)],
+      [''],
+      ['── KELEMBAPAN TANAH ──'],
+      ['Rata-rata (%)',  avg(srcM)],
+      ['Minimum (%)',    minV(srcM)],
+      ['Maksimum (%)',   maxV(srcM)],
+      [''],
+      ['── pH TANAH ──'],
+      ['Rata-rata',      avg(srcP)],
+      ['Minimum',        minV(srcP)],
+      ['Maksimum',       maxV(srcP)],
+      [''],
+      ['── AKTIVITAS POMPA ──'],
+      ['Total pompa menyala', pumpOnCount],
+      ['Pompa manual',        pumpManual],
+      ['Pompa otomatis',      pumpAuto],
+    ];
+
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    wsSummary['!cols'] = [{ wch: 30 }, { wch: 28 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
+
+    // ── Download ──────────────────────────────────
+    XLSX.writeFile(wb, `terramind_data_${tgl}.xlsx`);
+
+    const total = useDB ? allRecords.length : H.lbl.length;
+    btn.textContent = `✓ ${total.toLocaleString('id-ID')} record`;
+    setTimeout(() => { btn.textContent = '⬇ Export Excel'; btn.disabled = false; }, 2500);
+
+  } catch(e) {
+    console.error('[EXPORT]', e);
+    btn.textContent = '✗ Gagal';
+    setTimeout(() => { btn.textContent = '⬇ Export Excel'; btn.disabled = false; }, 2000);
+  }
+}
+
+(async () => {
+  await Promise.all([loadLog(), loadHistory()]);   // tampilkan data lama dulu
+  tick();
+  setInterval(tick, POLL);
+})();
+
+// ═══════════════════════════════════════════════
+// REALISTIC CANVAS ANIMATIONS
+// ═══════════════════════════════════════════════
+
+// ── Utility ─────────────────────────────────────
+function makeCanvas(container) {
+  container.innerHTML = '';
+  const c = document.createElement('canvas');
+  container.appendChild(c);
+  return c;
+}
+function fitCanvas(c) {
+  const p = c.parentElement;
+  c.width  = p.offsetWidth;
+  c.height = p.offsetHeight;
+}
+const rand  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ── 1. WATER DROPS (pump bar) — CSS-based, no lag ──
+// Inject drop keyframes once
+(function() {
+  const st = document.createElement('style');
+  st.textContent = `
+    #water-canvas { background: transparent !important; }
+    .wdrop {
+      position: absolute;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+    .wdrop-body {
+      background: linear-gradient(180deg,
+        rgba(180,225,255,0.9) 0%,
+        rgba(91,168,212,0.75) 55%,
+        rgba(30,100,160,0.3) 100%);
+      border-radius: 50% 50% 60% 60% / 40% 40% 60% 60%;
+      box-shadow: inset -2px -3px 4px rgba(255,255,255,0.35),
+                  inset 1px 1px 3px rgba(30,80,140,0.4);
+    }
+    @keyframes wfall {
+      0%   { transform: translateY(-12px) scaleY(0.7); opacity: 0; }
+      8%   { opacity: 1; transform: translateY(-4px) scaleY(1); }
+      85%  { opacity: 0.85; transform: translateY(var(--fall-dist)) scaleY(1.08); }
+      100% { opacity: 0; transform: translateY(calc(var(--fall-dist) + 6px)) scaleY(0.5); }
+    }
+    @keyframes wstreak {
+      0%   { transform: scaleY(0); opacity: 0; }
+      15%  { opacity: 0.5; transform: scaleY(1); }
+      85%  { opacity: 0.3; }
+      100% { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
+const wCanvas = document.getElementById('water-canvas');
+const wContainer = wCanvas.parentElement;
+let wDropsEl = null;
+let wSpawnTimer = null;
+const W_DROP_COUNT = 10; // total concurrent drops — lightweight
+
+function createWaterLayer() {
+  if (wDropsEl) wDropsEl.remove();
+  wDropsEl = document.createElement('div');
+  wDropsEl.style.cssText = 'position:absolute;inset:0;pointer-events:none;overflow:hidden;';
+  wContainer.appendChild(wDropsEl);
+}
+
+function spawnWDrop() {
+  if (!wDropsEl) return;
+  const bar  = document.getElementById('pump-bar');
+  const W    = bar.offsetWidth;
+  const H    = bar.offsetHeight;
+
+  const size = rand(4, 9);          // drop diameter px
+  const xPct = rand(4, 96);         // horizontal %
+  const dur  = rand(0.65, 1.2);     // fall duration s
+  const delay= rand(0, 0.05);
+  const dist = rand(H * 0.6, H * 0.85); // how far it falls
+
+  // streak (trail above drop)
+  const streak = document.createElement('div');
+  const sLen   = rand(8, 20);
+  streak.className = 'wdrop';
+  streak.style.cssText = `
+    left:${xPct}%; top:0; width:${size * 0.35}px; height:${sLen}px;
+    transform-origin: top center;
+    background: linear-gradient(180deg, rgba(91,168,212,0) 0%, rgba(150,210,255,0.45) 100%);
+    animation: wstreak ${dur * 0.8}s ${delay}s ease-in forwards;
+  `;
+  wDropsEl.appendChild(streak);
+
+  // teardrop body
+  const drop = document.createElement('div');
+  drop.className = 'wdrop';
+  drop.style.cssText = `
+    left:calc(${xPct}% - ${size/2}px);
+    top: ${rand(2, 10)}px;
+    width:${size}px; height:${size * 1.35}px;
+    --fall-dist: ${dist}px;
+    animation: wfall ${dur}s ${delay}s cubic-bezier(.33,0,.68,1) forwards;
+  `;
+  const body = document.createElement('div');
+  body.className = 'wdrop-body';
+  body.style.cssText = `width:100%;height:100%;`;
+  drop.appendChild(body);
+  wDropsEl.appendChild(drop);
+
+  // cleanup after animation
+  const total = (dur + delay + 0.15) * 1000;
+  setTimeout(() => {
+    drop.remove();
+    streak.remove();
+  }, total);
+}
+
+function startWater() {
+  createWaterLayer();
+  // stagger initial burst then keep dripping
+  let launched = 0;
+  function burst() {
+    spawnWDrop();
+    launched++;
+    if (launched < W_DROP_COUNT) setTimeout(burst, rand(60, 200));
+  }
+  burst();
+  // continuous drip every 120-280ms
+  wSpawnTimer = setInterval(() => spawnWDrop(), rand(120, 280));
+}
+function stopWater() {
+  clearInterval(wSpawnTimer);
+  wSpawnTimer = null;
+  if (wDropsEl) { wDropsEl.remove(); wDropsEl = null; }
+}
+
+const _origSync = syncPump;
+syncPump = function(on) { _origSync(on); if (on) startWater(); else stopWater(); };
+
+// ── 2. HEAT SHIMMER (Suhu) ───────────────────────
+(function() {
+  const container = document.getElementById('par-temp');
+  const c = makeCanvas(container);
+  const ctx = c.getContext('2d');
+  fitCanvas(c);
+  window.addEventListener('resize', () => fitCanvas(c));
+
+  const waves = Array.from({length: 6}, (_, i) => ({
+    x:    rand(0.1, 0.9),
+    y:    rand(0.5, 0.95),
+    phase: rand(0, Math.PI * 2),
+    speed: rand(0.012, 0.025),
+    amp:  rand(4, 10),
+    h:    rand(14, 28),
+    alpha: rand(0.06, 0.14)
+  }));
+
+  let intensity = 0.5; // updated from sensor
+  window._setTempIntensity = v => { intensity = clamp((v - 15) / 30, 0, 1); };
+
+  let tRaf;
+  (function loop() {
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    waves.forEach(w => {
+      w.phase += w.speed * (1 + intensity);
+      const cx = w.x * W + Math.sin(w.phase) * w.amp;
+      const cy = w.y * H;
+      const rise = intensity * w.h;
+
+      // wavy heat column
+      const grad = ctx.createLinearGradient(cx, cy, cx, cy - rise);
+      grad.addColorStop(0,   `rgba(224,92,92,${w.alpha * intensity})`);
+      grad.addColorStop(0.4, `rgba(255,160,80,${w.alpha * intensity * .6})`);
+      grad.addColorStop(1,   `rgba(255,220,100,0)`);
+
+      ctx.beginPath();
+      // wavy path
+      ctx.moveTo(cx - 3, cy);
+      for (let s = 0; s <= 1; s += 0.1) {
+        const wx = cx + Math.sin(w.phase + s * 4) * (3 * intensity);
+        const wy = cy - s * rise;
+        ctx.lineTo(wx, wy);
+      }
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2.5 + intensity * 2;
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = clamp(intensity * 1.2, 0, 1);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+    tRaf = requestAnimationFrame(loop);
+  })();
+})();
+
+// ── 3. RAINDROPS (Kelembapan udara) ─────────────
+(function() {
+  const container = document.getElementById('par-hum');
+  const c = makeCanvas(container);
+  const ctx = c.getContext('2d');
+  fitCanvas(c);
+  window.addEventListener('resize', () => fitCanvas(c));
+
+  const drops = [];
+  let intensity = 0.5;
+  window._setHumIntensity = v => { intensity = clamp(v / 100, 0, 1); };
+
+  (function loop() {
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // spawn
+    if (Math.random() < intensity * 0.5) {
+      drops.push({
+        x: rand(0.05, 0.95) * W,
+        y: -6,
+        vy: rand(2.5, 5) * (0.5 + intensity * .7),
+        len: rand(5, 12) * intensity,
+        alpha: rand(0.35, 0.7) * intensity,
+        r: rand(1, 2)
+      });
+    }
+
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      d.y += d.vy;
+
+      // streak
+      ctx.save();
+      ctx.globalAlpha = d.alpha;
+      const g = ctx.createLinearGradient(d.x, d.y - d.len, d.x, d.y);
+      g.addColorStop(0, 'rgba(91,168,212,0)');
+      g.addColorStop(1, `rgba(150,210,255,${d.alpha})`);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = d.r;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y - d.len);
+      ctx.lineTo(d.x, d.y);
+      ctx.stroke();
+
+      // bulb at tip
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r * 1.4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,225,255,${d.alpha})`;
+      ctx.fill();
+      ctx.restore();
+
+      // splash on bottom
+      if (d.y > H - 4) {
+        for (let k = 0; k < 4; k++) {
+          const a = rand(0, Math.PI);
+          const sp = rand(1, 3);
+          drops.push({ x: d.x + Math.cos(a)*rand(0,4), y: H - 4,
+            vy: -rand(.5,1.5), len: 0, alpha: d.alpha * .5, r: .8, splash: true, life: rand(6,12) });
+        }
+        drops.splice(i, 1); continue;
+      }
+      // fade out splash
+      if (d.splash) {
+        d.life--;
+        d.x += rand(-.5,.5);
+        d.y += d.vy;
+        d.vy += 0.1;
+        d.alpha -= 0.04;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, d.alpha);
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(91,168,212,.6)';
+        ctx.fill();
+        ctx.restore();
+        if (d.life <= 0 || d.alpha <= 0) { drops.splice(i,1); continue; }
+      }
+      if (d.y > H + 10) drops.splice(i, 1);
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// ── 4. SOIL MOISTURE SEEPAGE (Kelembapan tanah) ──
+(function() {
+  const container = document.getElementById('par-moist');
+  const c = makeCanvas(container);
+  const ctx = c.getContext('2d');
+  fitCanvas(c);
+  window.addEventListener('resize', () => { fitCanvas(c); });
+
+  // Simulate water seeping through soil particles
+  const blobs = Array.from({length: 12}, () => ({
+    x: rand(0.05, 0.95),
+    y: rand(0.6, 1.1),   // start below
+    vy: rand(-0.3, -0.1),
+    r: rand(3, 8),
+    alpha: rand(0.08, 0.22),
+    wob: rand(0, Math.PI*2),
+    wobSpd: rand(0.01, 0.025)
+  }));
+  let intensity = 0.5;
+  window._setMoistIntensity = v => { intensity = clamp(v / 100, 0, 1); };
+
+  (function loop() {
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    blobs.forEach(b => {
+      b.wob += b.wobSpd;
+      b.x += Math.sin(b.wob) * 0.4 * intensity;
+      b.y += b.vy * intensity;
+      if (b.y < -b.r * 2) { b.y = 1.05; b.x = rand(0.05, 0.95); }
+
+      const a = b.alpha * intensity;
+      const cx = b.x * W, cy = b.y * H;
+
+      ctx.save();
+      ctx.globalAlpha = a;
+      const g = ctx.createRadialGradient(cx - b.r*.3, cy - b.r*.3, 0, cx, cy, b.r);
+      g.addColorStop(0, 'rgba(200,160,80,.9)');
+      g.addColorStop(0.6, 'rgba(180,130,60,.5)');
+      g.addColorStop(1, 'rgba(140,90,40,0)');
+      ctx.beginPath();
+      ctx.arc(cx, cy, b.r, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.restore();
+    });
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// ── 5. BUBBLES (pH) ──────────────────────────────
+(function() {
+  const container = document.getElementById('par-ph');
+  const c = makeCanvas(container);
+  const ctx = c.getContext('2d');
+  fitCanvas(c);
+  window.addEventListener('resize', () => fitCanvas(c));
+
+  const bubbles = [];
+  let phVal = 7;
+  window._setPhVal = v => { phVal = v; };
+
+  // Color shifts from acid red → neutral green → base purple
+  function phColor(ph) {
+    if (ph < 5.5) return [224, 92,  92];
+    if (ph > 7.0) return [92,  92, 200];
+    return [76, 175, 128];
+  }
+
+  (function loop() {
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // spawn
+    if (bubbles.length < 14 && Math.random() < 0.18) {
+      const r = rand(2, 6);
+      bubbles.push({
+        x: rand(r, W - r),
+        y: H + r,
+        vy: -rand(0.5, 1.8),
+        vx: rand(-0.3, 0.3),
+        r,
+        wobble: rand(0, Math.PI*2),
+        wobSpd: rand(0.02, 0.06),
+        alpha: rand(0.35, 0.7)
+      });
+    }
+
+    const [cr, cg, cb] = phColor(phVal);
+
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const b = bubbles[i];
+      b.wobble += b.wobSpd;
+      b.x  += b.vx + Math.sin(b.wobble) * 0.6;
+      b.y  += b.vy;
+      b.alpha -= 0.0025;
+
+      if (b.y + b.r < -2 || b.alpha <= 0) { bubbles.splice(i, 1); continue; }
+
+      const a = b.alpha;
+      ctx.save();
+      ctx.globalAlpha = a;
+
+      // bubble ring
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(${cr},${cg},${cb},${a * .9})`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // inner fill very faint
+      const g = ctx.createRadialGradient(b.x - b.r*.35, b.y - b.r*.35, 0, b.x, b.y, b.r);
+      g.addColorStop(0, `rgba(255,255,255,${a*.25})`);
+      g.addColorStop(0.6, `rgba(${cr},${cg},${cb},${a*.08})`);
+      g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+
+      // specular
+      ctx.beginPath();
+      ctx.arc(b.x - b.r*.35, b.y - b.r*.35, b.r*.28, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${a*.6})`;
+      ctx.fill();
+
+      ctx.restore();
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// ── Hook into UI updates ─────────────────────────
+const _origUi = ui;
+ui = function(d) {
+  _origUi(d);
+  if (window._setTempIntensity)  _setTempIntensity(+d.t);
+  if (window._setHumIntensity)   _setHumIntensity(+d.h);
+  if (window._setMoistIntensity) _setMoistIntensity(+d.m);
+  if (window._setPhVal)          _setPhVal(+d.p);
+};
+</script>
+</body>
+</html>
